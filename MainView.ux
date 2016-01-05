@@ -1,0 +1,467 @@
+<App Theme="Basic">
+	<JavaScript File="./api.js" ux:Global="newsApi" />
+	<JavaScript>
+	var interApp = require('FuseJS/InterApp');
+	var Observable = require("FuseJS/Observable");
+	var isLoadingData = Observable(true);
+
+	var currentUrl = Observable();
+	var activePage = Observable("MainPage");
+	var isOpenWebview = false;
+
+	var newsApi = require("newsApi");
+	var topStoriesUrl = newsApi.HN_TOP_STORIES_ENDPOINT;
+	var newStoriesUrl = newsApi.HN_NEW_STORIES_ENDPOINT;
+	var showStoriesUrl = newsApi.HN_SHOW_STORIES_ENDPOINT;
+	var askStoriesUrl = newsApi.HN_ASK_STORIES_ENDPOINT;
+	var jobsStoriesUrl = newsApi.HN_JOB_STORIES_ENDPOINT;
+	
+	var itemUrl = newsApi.HN_ITEM_ENDPOINT;
+
+	var topAskList = [];
+	var topAskData = [];
+	var topNewList = [];
+	var topNewData = [];
+	var topShowList = [];
+	var topShowData = [];
+	var topJobsList = [];
+	var topJobsData = [];
+	var topStoriesList = []
+	var topStoriesData = [];
+
+	var topHNList = Observable();	
+	var topHNData = Observable();
+
+	//0: Ask, 1: Show, 2: Top, 3: New, 4: Jobs
+	var currentDataFor = 2;
+	var fetchingUrl = topStoriesUrl;
+
+	var MAX_ITEMS = 10;
+	function getDataList(url){
+		isLoadingData.value = true;
+		topHNList.clear();
+		topHNData.clear();
+
+		fetch(url).then(function(response){
+			return response.json()
+		}).then(function(responseObject){
+			topHNList.replaceAll(responseObject);
+			switch (currentDataFor){
+				case 0:
+					topAskList = responseObject.concat();
+					break;
+				case 1:
+					topShowList = responseObject.concat();
+					break;
+				case 2:
+					topStoriesList = responseObject.concat();
+					break;
+				case 3:
+					topNewList = responseObject.concat();
+					break;
+				case 4:
+					topJobsList = responseObject.concat();
+					break;										
+			}
+			for(var i=0; i<MAX_ITEMS; i++){
+				getItem(responseObject[i],i);
+			}
+			console.log(topHNList.length);
+				//isLoading.value=false;
+			});
+	};
+
+	var isLoading = Observable(false);
+	function reloadHandler(){
+		isLoading.value = true;
+		getDataList(fetchingUrl);
+	};
+
+	//		function endLoading(){
+	//			isLoading.value = false;
+	//		};
+
+	function getItem(itemID,i){
+		fetch(itemUrl+itemID+'.json').then(function(response){
+			return response.json()
+		}).then(function(responseObject){
+			switch (currentDataFor){
+				case 0:
+					topAskData.push(responseObject);
+					break;
+				case 1:
+					topShowData.push(responseObject);
+					break;
+				case 2:
+					topStoriesData.push(responseObject);
+					break;
+				case 3:
+					topNewData.push(responseObject);
+					break;
+				case 4:
+					topJobsData.push(responseObject);
+					break;										
+			};
+			topHNData.add(responseObject);
+			if (i==(MAX_ITEMS -1)){
+				isLoadingData.value=false;
+				isLoading.value=false;
+			};
+		})
+	};
+
+	function changeStatus(){
+		isLoading.value=false;
+	};
+
+	var isLoadingComments = Observable(true);
+	var commentsLength = 0;
+	var commentsData = Observable();
+
+	function shouldOpenWebview(sender){
+		if (isOpenWebview) {
+			currentUrl.value=sender.data.url;
+			activePage.value="WebviewPage";
+			console.log(currentUrl.value);
+		} else {
+			if (sender.data.descendants > 0){
+				isLoadingComments.value = true;
+				commentsData.clear();
+				console.log(sender.data.kids);
+				loadingComments(sender.data.kids);
+				activePage.value = "CommentsPage";
+			};
+		}
+	};
+
+	function loadingComments(items){
+		commentsLength = items.length;
+		for (var i = 0; i< commentsLength; i++){
+			getItemComment(items[i],i);
+		}
+	};
+
+	function getItemComment(itemID,i){
+	//			console.log("Getting ..." + itemID);
+	fetch(itemUrl+itemID+'.json').then(function(response){
+		return response.json()
+	}).then(function(responseObject){
+		responseObject.text = fixCommentText(responseObject.text);
+		commentsData.add(responseObject);
+	//				if (i==(commentsLength -1)){
+	//					isLoadingComments.value=false;
+	//				};
+	})
+	};
+
+	function fixCommentText(str){
+		return String(str).replace(/<p>/g, '\n\n')
+		.replace(/&#x2F;/g, '/')
+		.replace('<i>', '')
+		.replace('</i>', '')
+		.replace(/&#x27;/g, '\'')
+		.replace(/&quot;/g, '\"')
+		.replace(/<a\s+(?:[^>]*?\s+)?href="([^"]*)" rel="nofollow">(.*)?<\/a>/g, "$1");
+	};
+
+	function openWebSource(sender){
+		isOpenWebview = true;
+		console.log("open web");
+	};
+
+
+	function openCommentsPage(sender){
+		isOpenWebview = false;
+		console.log("open comments");
+	};
+
+	function openInSafari(){
+		console.log(currentUrl.value);
+		interApp.launchUri(currentUrl.value);
+	};
+
+	var headerString = Observable("Hacker News -- Top Stories");
+
+	function activateAsk (){
+		headerString.value="Hacker News -- Ask";
+		currentDataFor = 0;
+		fetchingUrl = askStoriesUrl;
+		if (topAskData.length > 0){
+			topHNData.clear();
+			topHNData.replaceAll(topAskData);
+		} else {
+			getDataList(fetchingUrl);
+		}
+	};
+
+	function activateShow (){
+		headerString.value="Hacker News -- Show";
+		currentDataFor = 1;
+		fetchingUrl = showStoriesUrl;
+		if (topShowData.length > 0){
+			topHNData.clear();
+			topHNData.replaceAll(topShowData);
+		} else {
+			getDataList(fetchingUrl);
+		}
+	};
+	function activateTop (){
+		headerString.value="Hacker News -- Top Stories";
+		currentDataFor = 2;
+		fetchingUrl = topStoriesUrl;
+		if (topStoriesData.length > 0){
+			topHNData.clear();
+			topHNData.replaceAll(topStoriesData);
+		} else {
+			getDataList(fetchingUrl);
+		}
+	};
+	function activateNew (){
+		headerString.value="Hacker News -- New";
+		currentDataFor = 3;
+		fetchingUrl = newStoriesUrl;
+		if (topNewData.length > 0){
+			topHNData.clear();
+			topHNData.replaceAll(topNewData);
+		} else {
+			getDataList(fetchingUrl);
+		}
+	};
+	function activateJobs (){
+		headerString.value="Hacker News -- Jobs";
+		currentDataFor = 4;
+		fetchingUrl = jobsStoriesUrl;
+		if (topJobsData.length > 0){
+			topHNData.clear();
+			topHNData.replaceAll(topJobsData);
+		} else {
+			getDataList(fetchingUrl);
+		}
+	};
+
+	getDataList(fetchingUrl);
+
+	module.exports = {
+		isLoadingData: isLoadingData,
+		activePage: activePage,
+		shouldOpenWebview: shouldOpenWebview,
+		openWebSource: openWebSource,
+		openCommentsPage: openCommentsPage,
+		isLoadingComments: isLoadingComments,
+		commentsData: commentsData,
+		currentUrl: currentUrl,
+		topHNData: topHNData,
+		changeStatus: changeStatus,
+		reloadHandler: reloadHandler,
+		isLoading: isLoading,
+		openInSafari: openInSafari,
+		headerString: headerString,
+		activateAsk: activateAsk,
+		activateShow: activateShow,
+		activateTop: activateTop,
+		activateNew: activateNew,
+		activateJobs: activateJobs,
+	};
+	</JavaScript>
+<Panel ux:Class="MainPage">
+	<EnteringAnimation>
+		<Move X="-1" RelativeTo="ParentSize" />
+	</EnteringAnimation>
+	<ExitingAnimation>
+		<Move X="1" RelativeTo="ParentSize" />
+	</ExitingAnimation>
+</Panel>
+<Panel ux:Class="CommentsPage">
+	<EnteringAnimation>
+		<Move X="-1" RelativeTo="ParentSize" />
+	</EnteringAnimation>
+	<ExitingAnimation>
+		<Move X="1" RelativeTo="ParentSize" />
+	</ExitingAnimation>
+</Panel>
+<Panel ux:Class="WebviewPage">
+	<EnteringAnimation>
+		<Move X="-1" RelativeTo="ParentSize" />
+	</EnteringAnimation>
+	<ExitingAnimation>
+		<Move X="1" RelativeTo="ParentSize" />
+	</ExitingAnimation>
+</Panel>
+<Panel>
+	<LinearNavigation ux:Name="nav" Easing="CircularOut" Active="{activePage}"/>
+
+	<MainPage ux:Name="MainPage">
+		<DockPanel>
+
+			<StatusBarBackground Dock="Top"/>
+			<BottomBarBackground Dock="Bottom"/>
+
+			<StackPanel Dock="Top">
+				<Text FontSize="23" Alignment="VerticalCenter"
+					TextAlignment="Center" Padding="2"
+					Value="{headerString}" />
+					<Rectangle Height="1" Margin="0,3,0,0" Fill="#333c48" />
+			</StackPanel>
+			<WhileTrue Value="{isLoadingData}">
+					<DockPanel>
+						<BigCog ux:Name="loadingCog">
+							<Translation ux:Name="loadingTrans" Y="-100" />
+							<Rotation ux:Name="loadingRotation" />
+						</BigCog>
+						<Text Alignment="Center" FontSize="24">Loading Data</Text>
+					</DockPanel>
+					<Spin Target="loadingCog" Frequency="0.2" />
+			</WhileTrue>
+			<WhileFalse Value="{isLoadingData}">
+					<Text ux:Class="Header" Margin="10,5,10,5" TextWrapping="Wrap" FontSize="15" TextColor="#FF932C"/>
+					<Text ux:Class="Comments" Margin="5,0,0,0" TextWrapping="NoWrap" FontSize="13" />
+					<ScrollView SnapMinTransform="false">
+						<DockPanel>
+							<CogWheelReload Dock="Top" />
+							<StackPanel Alignment="Top" Background="#FFF">
+								<Panel Height="7" />
+								<DropShadow ux:Name="dropShadow" Color="#333" Distance="10" Size="10" Angle="180" />
+								<Each Items="{topHNData}">
+									<Panel ux:Class="HorizontalBar" Margin="10,10,0,10"
+										Alignment="VerticalCenter">
+										<Rectangle Height="1" Fill="#dcdee3" />
+									</Panel>
+									<StackPanel Orientation="Vertical">
+										<Clicked>
+											<Callback Handler="{shouldOpenWebview}" />
+										</Clicked>
+										<Header Value="{title}">
+											<Clicked>
+												<Callback Handler="{openWebSource}"/>
+											</Clicked>
+										</Header>
+										<StackPanel Orientation="Horizontal">
+											<Comments Margin="15,0,0,0" Value="Posted by:" />
+											<Comments Value="{by}" />
+											<Comments Value="Score:" />
+											<Comments Value="{score}" />
+											<Comments Value="Comments:" />
+											<Comments Value="{descendants}" />
+											<Clicked>
+												<Callback Handler="{openCommentsPage}"/>
+											</Clicked>
+										</StackPanel>
+									</StackPanel>
+									<HorizontalBar />
+								</Each>
+							</StackPanel>
+						</DockPanel>
+					</ScrollView>
+			</WhileFalse>
+			<Grid Columns="1*,1*,1*,1*,1*" Height="40" Dock="Bottom">
+				<Text ux:Class="menuText" Alignment="Center" FontSize="10" />
+				<Image ux:Class="menuImage" Height="25" Alignment="Center" StretchMode="Fill" StretchDirection="DownOnly"/>
+				<Panel>
+					<StackPanel>
+						<menuImage File="Assets/ask.png" />
+						<menuText Value="Ask" />
+						<Clicked>
+							<Callback Handler="{activateAsk}" />
+						</Clicked>
+					</StackPanel>
+				</Panel>
+				<Panel>
+					<StackPanel>
+						<menuImage File="Assets/show.png"/>
+						<menuText Value="Show" />
+						<Clicked>
+							<Callback Handler="{activateShow}" />
+						</Clicked>
+					</StackPanel>
+				</Panel>
+				<Panel>
+					<StackPanel>
+						<menuImage File="Assets/star.png" />
+						<menuText Value="Top" />
+						<Clicked>
+							<Callback Handler="{activateTop}" />
+						</Clicked>
+					</StackPanel>
+				</Panel>
+				<Panel>
+					<StackPanel>
+						<menuImage File="Assets/new.png"/>
+						<menuText Value="New" />
+						<Clicked>
+							<Callback Handler="{activateNew}" />
+						</Clicked>
+					</StackPanel>
+				</Panel>
+				<Panel>
+					<StackPanel>
+						<menuImage File="Assets/jobs.png"/>
+						<menuText Value="Jobs" />
+						<Clicked>
+							<Callback Handler="{activateJobs}" />
+						</Clicked>
+					</StackPanel>
+				</Panel>
+			</Grid>
+		</DockPanel>
+	</MainPage>
+	<CommentsPage ux:Name="CommentsPage">
+			<DockPanel>
+				<StatusBarBackground Dock="Top"/>
+				<BottomBarBackground Dock="Bottom"/>
+				<StackPanel Dock="Top">
+					<Text FontSize="20" Alignment="VerticalCenter"
+						TextAlignment="Center" Padding="2"
+						Value="Comments" />
+						<Rectangle Height="1" Margin="0,3,0,0" Fill="#333c48" />
+					</StackPanel>
+
+					<Text ux:Class="Author" Margin="10,5,10,5" TextWrapping="NoWrap" FontSize="15" TextColor="#FF932C"/>
+					<Text ux:Class="Comment" Margin="5,0,0,0" TextWrapping="Wrap" FontSize="13" />
+					<ScrollView>
+						<StackPanel Alignment="Top" Background="#FFF">
+							<Panel Height="7" />
+							<Each Items="{commentsData}">
+								<StackPanel Orientation="Vertical">
+									<Author Value="{by}" />
+									<Comment Value="{text}" />
+								</StackPanel>
+								<HorizontalBar />
+							</Each>
+						</StackPanel>
+					</ScrollView>
+					<Button Dock="Bottom" Text="Back to News">
+						<Clicked>
+							<NavigateTo Target="MainPage" />
+						</Clicked>
+					</Button>
+				</DockPanel>
+	</CommentsPage>
+	<WebviewPage ux:Name="WebviewPage">
+				<DockPanel>
+					<StatusBarBackground Dock="Top"/>
+					<BottomBarBackground Dock="Bottom"/>
+					<NativeViewHost>
+						<WebView ux:Name="myWebView" Dock="Fill" Url="{currentUrl}">
+						</WebView>
+					</NativeViewHost>
+					<Panel Dock="Bottom">
+						<ColumnLayout ColumnCount="2" />
+						<Panel>
+							<Button Text="Go Back">
+								<Clicked>
+									<NavigateTo Target="MainPage" />
+								</Clicked>
+							</Button>
+						</Panel>
+						<Panel>
+							<Button Text="Open in Safari">
+								<Clicked>
+									<Callback Handler="{openInSafari}" />
+								</Clicked>
+							</Button>
+						</Panel>
+					</Panel>
+				</DockPanel>
+	</WebviewPage>
+</Panel>
+</App>
