@@ -36,7 +36,7 @@
 	var currentDataFor = 2;
 	var fetchingUrl = topStoriesUrl;
 
-	var MAX_ITEMS = 10;
+	var MAX_ITEMS = 30;
 	function getDataList(url){
 		isLoadingData.value = true;
 		topHNList.clear();
@@ -358,7 +358,7 @@
 				<Image ux:Class="menuImage" Height="25" Alignment="Center" StretchMode="Fill" StretchDirection="DownOnly"/>
 				<Panel>
 					<StackPanel>
-						<menuImage File="Assets/ask.png" />
+						<menuImage File="Assets/ic_ask.png" />
 						<menuText Value="Ask" />
 						<Clicked>
 							<Callback Handler="{activateAsk}" />
@@ -367,7 +367,7 @@
 				</Panel>
 				<Panel>
 					<StackPanel>
-						<menuImage File="Assets/show.png"/>
+						<menuImage File="Assets/ic_show.png"/>
 						<menuText Value="Show" />
 						<Clicked>
 							<Callback Handler="{activateShow}" />
@@ -376,7 +376,7 @@
 				</Panel>
 				<Panel>
 					<StackPanel>
-						<menuImage File="Assets/star.png" />
+						<menuImage File="Assets/ic_stars.png" />
 						<menuText Value="Top" />
 						<Clicked>
 							<Callback Handler="{activateTop}" />
@@ -385,7 +385,7 @@
 				</Panel>
 				<Panel>
 					<StackPanel>
-						<menuImage File="Assets/new.png"/>
+						<menuImage File="Assets/ic_new.png"/>
 						<menuText Value="New" />
 						<Clicked>
 							<Callback Handler="{activateNew}" />
@@ -394,7 +394,7 @@
 				</Panel>
 				<Panel>
 					<StackPanel>
-						<menuImage File="Assets/jobs.png"/>
+						<menuImage File="Assets/ic_jobs.png"/>
 						<menuText Value="Jobs" />
 						<Clicked>
 							<Callback Handler="{activateJobs}" />
