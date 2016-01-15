@@ -440,10 +440,22 @@
 				<DockPanel>
 					<StatusBarBackground Dock="Top"/>
 					<BottomBarBackground Dock="Bottom"/>
-					<NativeViewHost>
-						<WebView ux:Name="myWebView" Dock="Fill" Url="{currentUrl}">
-						</WebView>
-					</NativeViewHost>
+					<DockPanel Dock="Fill">
+						<Rectangle ux:Name="ProgressBar" Width="10%" Height="2" Fill="#148CFF" Margin="5,0,5,0" Visibility="Hidden" Alignment="Left"/>
+						<NativeViewHost>
+							<WebView ux:Name="myWebView" Dock="Fill" Url="{currentUrl}">
+								<WhilePageLoading>
+									<Change ProgressBar.Visibility="Visible" />
+								</WhilePageLoading>
+								<PageLoaded>
+									<Change ProgressBar.Visibility="Hidden" />
+								</PageLoaded>
+								<ProgressAnimation>
+									<Change ProgressBar.Width="100" />
+								</ProgressAnimation>
+							</WebView>
+						</NativeViewHost>
+					</DockPanel>
 					<Panel Dock="Bottom">
 						<ColumnLayout ColumnCount="2" />
 						<Panel>
