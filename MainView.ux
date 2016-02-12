@@ -38,7 +38,6 @@
 
 	var MAX_ITEMS = 30;
 	function getDataList(url){
-		isLoadingData.value = true;
 		topHNList.clear();
 		topHNData.clear();
 
@@ -67,7 +66,8 @@
 				getItem(responseObject[i],i);
 			}
 			console.log(topHNList.length);
-				//isLoading.value=false;
+			isLoadingData.value = false;
+			isLoading.value=false;
 			});
 	};
 
@@ -77,9 +77,9 @@
 		getDataList(fetchingUrl);
 	};
 
-	//		function endLoading(){
-	//			isLoading.value = false;
-	//		};
+	function endLoading(){
+		isLoading.value = false;
+	};
 
 	function getItem(itemID,i){
 		fetch(itemUrl+itemID+'.json').then(function(response){
@@ -190,6 +190,7 @@
 			topHNData.clear();
 			topHNData.replaceAll(topAskData);
 		} else {
+			isLoadingData.value = true;
 			getDataList(fetchingUrl);
 		}
 	};
@@ -202,6 +203,7 @@
 			topHNData.clear();
 			topHNData.replaceAll(topShowData);
 		} else {
+			isLoadingData.value = true;
 			getDataList(fetchingUrl);
 		}
 	};
@@ -213,6 +215,7 @@
 			topHNData.clear();
 			topHNData.replaceAll(topStoriesData);
 		} else {
+			isLoadingData.value = true;
 			getDataList(fetchingUrl);
 		}
 	};
@@ -224,6 +227,7 @@
 			topHNData.clear();
 			topHNData.replaceAll(topNewData);
 		} else {
+			isLoadingData.value = true;
 			getDataList(fetchingUrl);
 		}
 	};
@@ -235,10 +239,12 @@
 			topHNData.clear();
 			topHNData.replaceAll(topJobsData);
 		} else {
+			isLoadingData.value = true;
 			getDataList(fetchingUrl);
 		}
 	};
 
+	isLoadingData.value = true;
 	getDataList(fetchingUrl);
 
 	module.exports = {
@@ -263,6 +269,7 @@
 		activateJobs: activateJobs,
 	};
 	</JavaScript>
+
 <Panel ux:Class="MainPage">
 	<EnteringAnimation>
 		<Move X="-1" RelativeTo="ParentSize" />
@@ -416,7 +423,7 @@
 					</StackPanel>
 
 					<Text ux:Class="Author" Margin="10,5,10,5" TextWrapping="NoWrap" FontSize="15" TextColor="#FF932C"/>
-					<Text ux:Class="Comment" Margin="5,0,0,0" TextWrapping="Wrap" FontSize="13" />
+					<Text ux:Class="Comment" Margin="10,0,5,0" TextWrapping="Wrap" FontSize="13" />
 					<ScrollView>
 						<StackPanel Alignment="Top" Background="#FFF">
 							<Panel Height="7" />

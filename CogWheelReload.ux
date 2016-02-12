@@ -1,4 +1,4 @@
-<Panel ClipToBounds="True">
+<Panel ClipToBounds="True" ux:Class="CogWheelReload">
 	<Style>
 		<Image MaxHeight="200" MaxWidth="200" Alignment="Center" />
 	</Style>
