@@ -4,6 +4,7 @@
 	var interApp = require('FuseJS/InterApp');
 	var Observable = require("FuseJS/Observable");
 	var isLoadingData = Observable(true);
+	var appendingData = Observable(false);
 
 	var currentUrl = Observable();
 	var activePage = Observable("MainPage");
@@ -29,22 +30,24 @@
 	var topStoriesList = []
 	var topStoriesData = [];
 
-	var topHNList = Observable();	
+	//var topHNList = Observable();	
 	var topHNData = Observable();
 
 	//0: Ask, 1: Show, 2: Top, 3: New, 4: Jobs
 	var currentDataFor = 2;
 	var fetchingUrl = topStoriesUrl;
 
-	var MAX_ITEMS = 30;
+	var MAX_ITEMS = 20;
+	var ALL_LOADED_ITEMS = 0;
+
 	function getDataList(url){
-		topHNList.clear();
+		//topHNList.clear();
 		topHNData.clear();
 
 		fetch(url).then(function(response){
 			return response.json()
 		}).then(function(responseObject){
-			topHNList.replaceAll(responseObject);
+			//topHNList.replaceAll(responseObject);
 			switch (currentDataFor){
 				case 0:
 					topAskList = responseObject.concat();
@@ -62,10 +65,11 @@
 					topJobsList = responseObject.concat();
 					break;										
 			}
+			ALL_LOADED_ITEMS = responseObject.length;
 			for(var i=0; i<MAX_ITEMS; i++){
 				getItem(responseObject[i],i);
 			}
-			console.log(topHNList.length);
+			//console.log(topHNList.length);
 			isLoadingData.value = false;
 			isLoading.value=false;
 			});
@@ -106,6 +110,7 @@
 			if (i==(MAX_ITEMS -1)){
 				isLoadingData.value=false;
 				isLoading.value=false;
+				appendingData.value = false;
 			};
 		})
 	};
@@ -122,12 +127,12 @@
 		if (isOpenWebview) {
 			currentUrl.value=sender.data.url;
 			activePage.value="WebviewPage";
-			console.log(currentUrl.value);
+			//console.log(currentUrl.value);
 		} else {
 			if (sender.data.descendants > 0){
 				isLoadingComments.value = true;
 				commentsData.clear();
-				console.log(sender.data.kids);
+				//console.log(sender.data.kids);
 				loadingComments(sender.data.kids);
 				activePage.value = "CommentsPage";
 			};
@@ -244,6 +249,35 @@
 		}
 	};
 
+	function fetchAppendData(){
+		console.log("Fetching append data");
+		var currentPos = topHNData.length;
+		var currentList = [];
+		switch (currentDataFor){
+			case 0:
+					currentList = topAskList;
+					break;
+			case 1:
+					currentList = topShowList;
+					break;
+			case 2:
+					currentList = topStoriesList;
+					break;
+			case 3:
+					currentList = topNewList;
+					break;
+			case 4:
+					currentList = topJobsList;
+					break;										
+		};
+		appendingData.value = true;
+		for(var i=0; i<MAX_ITEMS; i++){
+			if ((i+currentPos) < ALL_LOADED_ITEMS){
+				getItem(currentList[i + currentPos],i);
+			}
+		};
+	};
+
 	isLoadingData.value = true;
 	getDataList(fetchingUrl);
 
@@ -267,6 +301,8 @@
 		activateTop: activateTop,
 		activateNew: activateNew,
 		activateJobs: activateJobs,
+		fetchAppendData: fetchAppendData,
+		appendingData: appendingData,
 	};
 	</JavaScript>
 
@@ -323,6 +359,10 @@
 					<Text ux:Class="Header" Margin="10,5,10,5" TextWrapping="Wrap" FontSize="15" TextColor="#FF932C"/>
 					<Text ux:Class="Comments" Margin="5,0,0,0" TextWrapping="NoWrap" FontSize="13" />
 					<ScrollView SnapMinTransform="false">
+						<!-- Scroll Bottom Trigger -->
+					    <WhileScrollable ScrollDirections="Down" Invert="true">
+						    <Callback Handler="{fetchAppendData}" />
+					    </WhileScrollable>
 						<DockPanel>
 							<CogWheelReload Dock="Top" />
 							<StackPanel Alignment="Top" Background="#FFF">
@@ -357,6 +397,12 @@
 									<HorizontalBar />
 								</Each>
 							</StackPanel>
+							<!-- Loading new data message -->
+					    	<WhileTrue Value="{appendingData}">
+					        	<Panel Height="80" Dock="Bottom">
+					          	<Text Value="Loading..." Alignment="Center" TextColor="#666"></Text>
+					        	</Panel>
+					      	</WhileTrue>
 						</DockPanel>
 					</ScrollView>
 			</WhileFalse>
