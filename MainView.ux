@@ -1,6 +1,8 @@
 <App Theme="Basic">
 	<JavaScript File="./api.js" ux:Global="newsApi" />
+	<ShareUrl ux:Global="ShareUrl" />
 	<JavaScript>
+	var shareUrl = require("ShareUrl").ShareThisUrl;
 	var interApp = require('FuseJS/InterApp');
 	var Observable = require("FuseJS/Observable");
 	var isLoadingData = Observable(true);
@@ -9,7 +11,7 @@
 	var currentUrl = Observable();
 	var activePage = Observable("MainPage");
 	var isOpenWebview = false;
-
+	
 	var newsApi = require("newsApi");
 	var topStoriesUrl = newsApi.HN_TOP_STORIES_ENDPOINT;
 	var newStoriesUrl = newsApi.HN_NEW_STORIES_ENDPOINT;
@@ -180,9 +182,10 @@
 		console.log("open comments");
 	};
 
-	function openInSafari(){
-		console.log(currentUrl.value);
-		interApp.launchUri(currentUrl.value);
+	function shareWith(){
+		//console.log(currentUrl.value);
+		//interApp.launchUri(currentUrl.value);
+		shareUrl(currentUrl.value);
 	};
 
 	var headerString = Observable("Hacker News -- Top Stories");
@@ -294,7 +297,7 @@
 		changeStatus: changeStatus,
 		reloadHandler: reloadHandler,
 		isLoading: isLoading,
-		openInSafari: openInSafari,
+		shareWith: shareWith,
 		headerString: headerString,
 		activateAsk: activateAsk,
 		activateShow: activateShow,
@@ -519,9 +522,9 @@
 							</Button>
 						</Panel>
 						<Panel>
-							<Button Text="Open in Safari">
+							<Button Text="Share With...">
 								<Clicked>
-									<Callback Handler="{openInSafari}" />
+									<Callback Handler="{shareWith}" />
 								</Clicked>
 							</Button>
 						</Panel>
