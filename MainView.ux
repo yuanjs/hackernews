@@ -187,6 +187,11 @@
 		//interApp.launchUri(currentUrl.value);
 		shareUrl(currentUrl.value);
 	};
+	function openInSafari(){
+		//console.log(currentUrl.value);
+		interApp.launchUri(currentUrl.value);
+		//shareUrl(currentUrl.value);
+	};
 
 	var headerString = Observable("Hacker News -- Top Stories");
 
@@ -298,6 +303,7 @@
 		reloadHandler: reloadHandler,
 		isLoading: isLoading,
 		shareWith: shareWith,
+		openInSafari: openInSafari,
 		headerString: headerString,
 		activateAsk: activateAsk,
 		activateShow: activateShow,
@@ -513,11 +519,18 @@
 						</NativeViewHost>
 					</DockPanel>
 					<Panel Dock="Bottom">
-						<ColumnLayout ColumnCount="2" />
+						<ColumnLayout ColumnCount="3" />
 						<Panel>
 							<Button Text="Go Back">
 								<Clicked>
 									<NavigateTo Target="MainPage" />
+								</Clicked>
+							</Button>
+						</Panel>
+						<Panel>
+							<Button Text="Open in Safari">
+								<Clicked>
+									<Callback Handler="{openInSafari}" />
 								</Clicked>
 							</Button>
 						</Panel>
