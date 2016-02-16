@@ -126,10 +126,16 @@
 	var commentsDepth = 0;
 	var commentsData = Observable();
 
+	// Use to store current data node, so we can use it later to 
+	// swith view between source and comments
+	var currentDataNode;
+	var textOfSourceOrComments = Observable("");
 	function shouldOpenWebview(sender){
+		currentDataNode = sender.data;
 		if (isOpenWebview) {
 			currentUrl.value=sender.data.url;
 			activePage.value="WebviewPage";
+			textOfSourceOrComments.value = "Comments";
 			//console.log(currentUrl.value);
 		} else {
 			if (sender.data.descendants > 0){
@@ -143,7 +149,22 @@
 				// 直接用Webpage打开comments页面
 				currentUrl.value = "https://news.ycombinator.com/item?id=" + sender.data.id;
 				activePage.value = "WebviewPage";
+				textOfSourceOrComments.value = "Source";
 			};
+		}
+	};
+
+	function openSourceOrComments(){
+		if(isOpenWebview){
+			// Open comments page
+			textOfSourceOrComments.value = "Source";
+			isOpenWebview = false;
+			currentUrl.value = "https://news.ycombinator.com/item?id=" + currentDataNode.id;
+		} else {
+			// Open source page
+			textOfSourceOrComments.value = "Comments";
+			isOpenWebview = true;
+			currentUrl.value = currentDataNode.url;
 		}
 	};
 
@@ -300,15 +321,15 @@
 		shouldOpenWebview: shouldOpenWebview,
 		openWebSource: openWebSource,
 		openCommentsPage: openCommentsPage,
-		isLoadingComments: isLoadingComments,
-		commentsData: commentsData,
+//		isLoadingComments: isLoadingComments,
+//		commentsData: commentsData,
 		currentUrl: currentUrl,
 		topHNData: topHNData,
 		changeStatus: changeStatus,
 		reloadHandler: reloadHandler,
 		isLoading: isLoading,
 		shareWith: shareWith,
-		openInSafari: openInSafari,
+//		openInSafari: openInSafari,
 		headerString: headerString,
 		activateAsk: activateAsk,
 		activateShow: activateShow,
@@ -317,6 +338,8 @@
 		activateJobs: activateJobs,
 		fetchAppendData: fetchAppendData,
 		appendingData: appendingData,
+		textOfSourceOrComments: textOfSourceOrComments,
+		openSourceOrComments: openSourceOrComments,
 	};
 	</JavaScript>
 
@@ -549,9 +572,9 @@
 							<Panel>
 								<StackPanel>
 									<menuImage File="Assets/ic_explore_3x.png"/>
-									<menuText Value="Safari" />
+									<menuText Value="{textOfSourceOrComments}" />
 									<Clicked>
-										<Callback Handler="{openInSafari}" />
+										<Callback Handler="{openSourceOrComments}" />
 									</Clicked>
 								</StackPanel>
 							</Panel>
