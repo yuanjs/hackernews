@@ -122,7 +122,8 @@
 	};
 
 	var isLoadingComments = Observable(true);
-	var commentsLength = 0;
+	// commentsDepth is a value for mark the reply depth of comments
+	var commentsDepth = 0;
 	var commentsData = Observable();
 
 	function shouldOpenWebview(sender){
@@ -132,33 +133,37 @@
 			//console.log(currentUrl.value);
 		} else {
 			if (sender.data.descendants > 0){
-				isLoadingComments.value = true;
-				commentsData.clear();
-				//console.log(sender.data.kids);
-				loadingComments(sender.data.kids);
-				activePage.value = "CommentsPage";
+				// isLoadingComments.value = true;
+				// commentsData.clear();
+				// //console.log(sender.data.kids);
+				// commentsDepth = 0;
+				// loadingComments(sender.data.kids, commentsDepth);
+				// activePage.value = "CommentsPage";
+				// 由于异步导入所有comments比较复杂
+				// 直接用Webpage打开comments页面
+				currentUrl.value = "https://news.ycombinator.com/item?id=" + sender.data.id;
+				activePage.value = "WebviewPage";
 			};
 		}
 	};
 
-	function loadingComments(items){
-		commentsLength = items.length;
+	function loadingComments(items, cDepth){
+		var commentsLength = items.length;
 		for (var i = 0; i< commentsLength; i++){
-			getItemComment(items[i],i);
+			//getItemComment(items[i],cDepth);
+			fetch(itemUrl+items[i]+'.json').then(function(response){
+				return response.json()
+			}).then(function(responseObject){
+				responseObject.text = fixCommentText(responseObject.text);
+				responseObject.commentDepth = cDepth;
+				commentsData.add(responseObject);
+				//由于异步处理的问题，和同时打开太多fetch，暂时不load所有的comments
+				//Add Code to fetch all the reply comments
+				//if(responseObject.kids.length > 0){
+				//	loadingComments(responseObject.kids, cDepth + 1);
+				//}
+			})
 		}
-	};
-
-	function getItemComment(itemID,i){
-	//			console.log("Getting ..." + itemID);
-	fetch(itemUrl+itemID+'.json').then(function(response){
-		return response.json()
-	}).then(function(responseObject){
-		responseObject.text = fixCommentText(responseObject.text);
-		commentsData.add(responseObject);
-	//				if (i==(commentsLength -1)){
-	//					isLoadingComments.value=false;
-	//				};
-	})
 	};
 
 	function fixCommentText(str){
@@ -466,7 +471,7 @@
 			</Grid>
 		</DockPanel>
 	</MainPage>
-	<CommentsPage ux:Name="CommentsPage">
+<!-- 	<CommentsPage ux:Name="CommentsPage">
 			<DockPanel>
 				<StatusBarBackground Dock="Top"/>
 				<BottomBarBackground Dock="Bottom"/>
@@ -483,11 +488,23 @@
 						<StackPanel Alignment="Top" Background="#FFF">
 							<Panel Height="7" />
 							<Each Items="{commentsData}">
-								<StackPanel Orientation="Vertical">
-									<Author Value="{by}" />
-									<Comment Value="{text}" />
-								</StackPanel>
-								<HorizontalBar />
+								<Panel>
+								<Match Value = "{commentDepth}">
+									<Case Number = "0">
+										<StackPanel Orientation="Vertical">
+											<Author Value="{by}" />
+											<Comment Value="{text}" />
+											<HorizontalBar />
+										</StackPanel>
+									</Case>
+									<Case IsDefault = "true" Bool = "true">
+										<StackPanel Orientation="Vertical" Margin="10,0,0,0">
+											<Author Value="{by}" />
+											<Comment Value="{text}" />
+										</StackPanel>						
+									</Case>
+								</Match>
+								</Panel>
 							</Each>
 						</StackPanel>
 					</ScrollView>
@@ -498,12 +515,13 @@
 					</Button>
 				</DockPanel>
 	</CommentsPage>
+ -->
 	<WebviewPage ux:Name="WebviewPage">
 				<DockPanel>
 					<StatusBarBackground Dock="Top"/>
 					<BottomBarBackground Dock="Bottom"/>
 					<DockPanel Dock="Fill">
-						<Rectangle ux:Name="ProgressBar" Width="10%" Height="2" Fill="#148CFF" Margin="5,0,5,0" Visibility="Hidden" Alignment="Left"/>
+						<Rectangle ux:Name="ProgressBar" Width="10%" Height="2" Fill="#148CFF" Margin="5,0,5,0" Visibility="Hidden" Alignment="Left" Dock="Top"/>
 						<NativeViewHost>
 							<WebView ux:Name="myWebView" Dock="Fill" Url="{currentUrl}">
 								<WhilePageLoading>
@@ -518,31 +536,54 @@
 							</WebView>
 						</NativeViewHost>
 					</DockPanel>
-					<Panel Dock="Bottom">
-						<ColumnLayout ColumnCount="3" />
-						<Panel>
-							<Button Text="Go Back">
-								<Clicked>
-									<NavigateTo Target="MainPage" />
-								</Clicked>
-							</Button>
-						</Panel>
-						<Panel>
-							<Button Text="Open in Safari">
-								<Clicked>
-									<Callback Handler="{openInSafari}" />
-								</Clicked>
-							</Button>
-						</Panel>
-						<Panel>
-							<Button Text="Share With...">
-								<Clicked>
-									<Callback Handler="{shareWith}" />
-								</Clicked>
-							</Button>
-						</Panel>
-					</Panel>
-				</DockPanel>
+						<Grid Columns="1*,1*,1*,1*,1*" Height="40" Dock="Bottom">
+							<Panel>
+								<StackPanel>
+									<menuImage File="Assets/ic_home_3x.png" />
+									<menuText Value="Home" />
+									<Clicked>
+										<NavigateTo Target="MainPage" />
+									</Clicked>
+								</StackPanel>
+							</Panel>
+							<Panel>
+								<StackPanel>
+									<menuImage File="Assets/ic_explore_3x.png"/>
+									<menuText Value="Safari" />
+									<Clicked>
+										<Callback Handler="{openInSafari}" />
+									</Clicked>
+								</StackPanel>
+							</Panel>
+							<Panel>
+								<StackPanel>
+									<menuImage File="Assets/ic_keyboard_arrow_left_3x.png" />
+									<menuText Value="Back" />
+									<Clicked>
+										<GoBack TargetNode="myWebView" />
+									</Clicked>
+								</StackPanel>
+							</Panel>
+							<Panel>
+								<StackPanel>
+									<menuImage File="Assets/ic_keyboard_arrow_right_3x.png"/>
+									<menuText Value="Forward" />
+									<Clicked>
+										<GoForward TargetNode="myWebView" />
+									</Clicked>
+								</StackPanel>
+							</Panel>
+							<Panel>
+								<StackPanel>
+									<menuImage File="Assets/ic_open_in_browser_3x.png"/>
+									<menuText Value="Share" />
+									<Clicked>
+										<Callback Handler="{shareWith}" />
+									</Clicked>
+								</StackPanel>
+							</Panel>
+						</Grid>					
+ 				</DockPanel>
 	</WebviewPage>
 </Panel>
 </App>
